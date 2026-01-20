@@ -178,4 +178,107 @@ RSpec.describe ActivityPub::Parser::StatusParser do
       end
     end
   end
+
+  describe '#processed_text' do
+    context 'when object is a Note' do
+      let(:object_json) do
+        {
+          id: [ActivityPub::TagManager.instance.uri_for(sender), 'post1'].join('/'),
+          type: 'Note',
+          to: 'https://www.w3.org/ns/activitystreams#Public',
+          content: 'This is the content',
+          published: 1.hour.ago.utc.iso8601,
+        }
+      end
+
+      it 'returns the content as-is' do
+        expect(subject.processed_text).to eq 'This is the content'
+      end
+    end
+
+    context 'when object is an Article' do
+      let(:object_json) do
+        {
+          id: [ActivityPub::TagManager.instance.uri_for(sender), 'article1'].join('/'),
+          type: 'Article',
+          to: 'https://www.w3.org/ns/activitystreams#Public',
+          name: 'Article Title',
+          content: 'This is the article body content',
+          summary: 'Article summary',
+          url: 'https://example.com/article1',
+          published: 1.hour.ago.utc.iso8601,
+        }
+      end
+
+      it 'includes title, summary, body content, and link' do
+        processed = subject.processed_text
+        expect(processed).to include('<h2>Article Title</h2>')
+        expect(processed).to include('Article summary')
+        expect(processed).to include('This is the article body content')
+        expect(processed).to include('https://example.com/article1')
+      end
+    end
+
+    context 'when object is a Page' do
+      let(:object_json) do
+        {
+          id: [ActivityPub::TagManager.instance.uri_for(sender), 'page1'].join('/'),
+          type: 'Page',
+          to: 'https://www.w3.org/ns/activitystreams#Public',
+          name: 'Page Title',
+          content: 'This is the page body content',
+          url: 'https://example.com/page1',
+          published: 1.hour.ago.utc.iso8601,
+        }
+      end
+
+      it 'includes title, body content, and link' do
+        processed = subject.processed_text
+        expect(processed).to include('<h2>Page Title</h2>')
+        expect(processed).to include('This is the page body content')
+        expect(processed).to include('https://example.com/page1')
+      end
+    end
+
+    context 'when object is an Event' do
+      let(:object_json) do
+        {
+          id: [ActivityPub::TagManager.instance.uri_for(sender), 'event1'].join('/'),
+          type: 'Event',
+          to: 'https://www.w3.org/ns/activitystreams#Public',
+          name: 'Event Title',
+          content: 'This is the event description',
+          url: 'https://example.com/event1',
+          published: 1.hour.ago.utc.iso8601,
+        }
+      end
+
+      it 'includes title, body content, and link' do
+        processed = subject.processed_text
+        expect(processed).to include('<h2>Event Title</h2>')
+        expect(processed).to include('This is the event description')
+        expect(processed).to include('https://example.com/event1')
+      end
+    end
+
+    context 'when Article has no body content' do
+      let(:object_json) do
+        {
+          id: [ActivityPub::TagManager.instance.uri_for(sender), 'article1'].join('/'),
+          type: 'Article',
+          to: 'https://www.w3.org/ns/activitystreams#Public',
+          name: 'Article Title',
+          url: 'https://example.com/article1',
+          published: 1.hour.ago.utc.iso8601,
+        }
+      end
+
+      it 'includes title and link without body content' do
+        processed = subject.processed_text
+        expect(processed).to include('<h2>Article Title</h2>')
+        expect(processed).to include('https://example.com/article1')
+        expect(processed).not_to include('body content')
+      end
+    end
+  end
 end
