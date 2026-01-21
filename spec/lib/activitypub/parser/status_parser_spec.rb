@@ -280,5 +280,89 @@ RSpec.describe ActivityPub::Parser::StatusParser do
         expect(processed).not_to include('body content')
       end
     end
+
+    context 'when Article has title with HTML special characters' do
+      let(:object_json) do
+        {
+          id: [ActivityPub::TagManager.instance.uri_for(sender), 'article1'].join('/'),
+          type: 'Article',
+          to: 'https://www.w3.org/ns/activitystreams#Public',
+          name: '<script>alert("XSS")</script> Article & Title',
+          content: 'This is the article body content',
+          url: 'https://example.com/article1',
+          published: 1.hour.ago.utc.iso8601,
+        }
+      end
+
+      it 'escapes HTML special characters in title' do
+        processed = subject.processed_text
+        expect(processed).to include('&lt;script&gt;alert(&quot;XSS&quot;)&lt;/script&gt; Article &amp; Title')
+        expect(processed).not_to include('<script>')
+        expect(processed).to include('This is the article body content')
+      end
+    end
+
+    context 'when object is an Image' do
+      let(:object_json) do
+        {
+          id: [ActivityPub::TagManager.instance.uri_for(sender), 'image1'].join('/'),
+          type: 'Image',
+          to: 'https://www.w3.org/ns/activitystreams#Public',
+          name: 'Image Title',
+          content: 'This is the image description',
+          url: 'https://example.com/image1',
+          published: 1.hour.ago.utc.iso8601,
+        }
+      end
+
+      it 'includes title, body content, and link' do
+        processed = subject.processed_text
+        expect(processed).to include('<h2>Image Title</h2>')
+        expect(processed).to include('This is the image description')
+        expect(processed).to include('https://example.com/image1')
+      end
+    end
+
+    context 'when object is an Audio' do
+      let(:object_json) do
+        {
+          id: [ActivityPub::TagManager.instance.uri_for(sender), 'audio1'].join('/'),
+          type: 'Audio',
+          to: 'https://www.w3.org/ns/activitystreams#Public',
+          name: 'Audio Title',
+          content: 'This is the audio description',
+          url: 'https://example.com/audio1',
+          published: 1.hour.ago.utc.iso8601,
+        }
+      end
+
+      it 'includes title, body content, and link' do
+        processed = subject.processed_text
+        expect(processed).to include('<h2>Audio Title</h2>')
+        expect(processed).to include('This is the audio description')
+        expect(processed).to include('https://example.com/audio1')
+      end
+    end
+
+    context 'when object is a Video' do
+      let(:object_json) do
+        {
+          id: [ActivityPub::TagManager.instance.uri_for(sender), 'video1'].join('/'),
+          type: 'Video',
+          to: 'https://www.w3.org/ns/activitystreams#Public',
+          name: 'Video Title',
+          content: 'This is the video description',
+          url: 'https://example.com/video1',
+          published: 1.hour.ago.utc.iso8601,
+        }
+      end
+
+      it 'includes title, body content, and link' do
+        processed = subject.processed_text
+        expect(processed).to include('<h2>Video Title</h2>')
+        expect(processed).to include('This is the video description')
+        expect(processed).to include('https://example.com/video1')
+      end
+    end
   end
 end

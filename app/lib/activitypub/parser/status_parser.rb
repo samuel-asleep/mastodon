@@ -49,7 +49,7 @@ class ActivityPub::Parser::StatusParser
     return text || '' unless converted_object_type?
 
     [
-      title.presence && "<h2>#{title}</h2>",
+      title.presence && "<h2>#{ERB::Util.html_escape(title)}</h2>",
       spoiler_text.presence,
       text.presence,
       linkify(url || uri),
